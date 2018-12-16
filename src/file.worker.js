@@ -64,6 +64,20 @@ function reset () {
 function step () {
   for ( let i = 0; i<20; i++){
     worlds[i].step(1/10)
+    var result = new CANNON.RaycastResult()
+    var left = bodyCs[i].position.clone().vsub(bodyBs[i].position);
+    var right = bodyAs[i].position.clone().vsub(bodyBs[i].position);
+    var forward = left.cross(right).vadd(bodyBs[i].position)
+    var forwardScaled = forward.mult(1.1)
+    var isHit = worlds[i].raycastClosest(forward, forwardScaled, {}, result);
+    var dirToWall = new CANNON.Vec3(0,0,0);
+    if (isHit) {
+      if(result.shape.boundingSphereRadius > 30 && result.shape.type !== 2){
+        //if we hit a block, send the direction
+        result.hitPointWorld.vsub(bodyBs[i].position, dirToWall)
+      }
+    }
+
     aPositions[i] = bodyAs[i].position
     bPositions[i] = bodyBs[i].position
     cPositions[i] = bodyCs[i].position
@@ -94,14 +108,14 @@ function step () {
     bVelocityX: bVelocityX,
     bVelocityY: bVelocityY,
     aCollided: aCollided,
-    cCollided: cCollided,})
+    cCollided: cCollided,
+    dirToWall: dirToWall})
 }
 
 function set (data) {
-  // console.log(data.motorSpeeds1[0])
   for ( let i = 0; i<20; i++){
-    constraint1s[i].setMotorSpeed(Math.max(-12, Math.min(data.motorSpeeds1[i], 12)) );
-    constraint2s[i].setMotorSpeed(Math.max(-12, Math.min(data.motorSpeeds2[i], 12)) );
+    constraint1s[i].setMotorSpeed(Math.max(-15, Math.min(data.motorSpeeds1[i], 15)) );
+    constraint2s[i].setMotorSpeed(Math.max(-15, Math.min(data.motorSpeeds2[i], 15)) );
   }
 }
 
@@ -119,6 +133,9 @@ function init (i) {
   var shapeA = new CANNON.Box(legs);
   var shapeB = new CANNON.Box(he);
   var shapeC = new CANNON.Box(legs);
+
+  var shapeWall = new CANNON.Box(new CANNON.Vec3(3,100,12));
+
   bodyAs = []
   bodyBs = []
   bodyCs = []
@@ -164,21 +181,9 @@ function init (i) {
     var rightAxis =  new CANNON.Vec3(1,0,0);
 
     const constraint1 = new CANNON.HingeConstraint(bodyA, bodyB,  { pivotA: localPivotA1,axisA:leftAxis,axisA:rightAxis, pivotB: localPivotB1 });
-    // var c = new CANNON.DistanceConstraint( bodyA , bodyB,6);
-    // c.collideConnected = false;
-    // world.addConstraint(c);
-    // var c2 = new CANNON.DistanceConstraint( bodyB , bodyC,6);
-    // c2.collideConnected = false;
-    //
-    // world.addConstraint(c2);
     constraint1.enableMotor();
     world.addConstraint(constraint1);
     constraint1s.push(constraint1)
-
-    // var localPivotA11 = new CANNON.Vec3(-2, 5, 2);
-    // var localPivotB11 = new CANNON.Vec3(-2, -2, 2);
-    // const constraint11 = new CANNON.HingeConstraint(bodyA, bodyB,  { pivotA: localPivotA11, pivotB: localPivotB11 });
-    // world.addConstraint(constraint11);
 
     var localPivotA2 = new CANNON.Vec3(-1, 2, -2);
     var localPivotB2 = new CANNON.Vec3(-1, -5, -2);
@@ -187,13 +192,17 @@ function init (i) {
     world.addConstraint(constraint2);
     constraint2s.push(constraint2)
 
-    // var localPivotA22 = new CANNON.Vec3(-2, 2, -2);
-    // var localPivotB22 = new CANNON.Vec3(-2, -5, -2);
-    // const constraint22 = new CANNON.HingeConstraint(bodyB, bodyC,  { pivotA: localPivotA22, pivotB: localPivotB22 });
-    // world.addConstraint(constraint22);
-
     groundBody.addShape(groundShape);
     world.addBody(groundBody);
+
+    //add wall boundaries
+    for (let i = 0 ; i < 2; i++){
+      const wall = new CANNON.Body({ mass: 1.5 });
+      wall.position.set(75 + i*70, 0, -15);
+      wall.addShape(shapeWall);
+      world.addBody(wall);
+    }
+
     worlds.push(world)
   }
 }

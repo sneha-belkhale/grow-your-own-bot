@@ -190,7 +190,7 @@ void main() {
   float line = min(grid.x, grid.y);
 
   // Just visualize the grid lines directly
-  totalEmissiveRadiance = (1.0 - min(line,1.0))*vec3(0.6,0.1,.2);
+  totalEmissiveRadiance = (1.0 - min(line,1.0))*vec3(vUv.x,0.1,vUv.y);
 
 	#include <logdepthbuf_fragment>
 	#include <map_fragment>

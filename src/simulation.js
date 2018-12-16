@@ -10,10 +10,12 @@ var FBXLoader = require('three-fbx-loader');
 
 
 var camera, scene, renderer, geometry, material
-var meshesA, meshesB,meshesC, controls;
+var meshesA, meshesB,meshesC, controls, wallMesh;
 
 var motorSpeeds1 = []
 var motorSpeeds2 = []
+
+var raycaster = new THREE.Raycaster()
 
 var workers = [];
 
@@ -46,7 +48,7 @@ let step = 0;
 let netIdx = 0;
 let totalRewards = Array(POPULATIONCOUNT);
 const destinationPoint = new THREE.Vector3(0,0,0);
-const pop = new Population(POPULATIONCOUNT, 0.4, [6, 12, 7, 5, 2]);
+const pop = new Population(POPULATIONCOUNT, 0.4, [9, 13, 8, 13, 2]);
 
 
 function set(event) {
@@ -62,7 +64,6 @@ function set(event) {
     meshesA[netIdx].position.y += 40*netIdx;
     meshesB[netIdx].position.copy(event.data.bPositions[i]);
     meshesB[netIdx].quaternion.copy(event.data.bQuaternions[i]);
-    // totalRewards[netIdx] -= meshesB[netIdx].position.z;
 
     meshesB[netIdx].position.y += 40*netIdx;
 
@@ -72,14 +73,12 @@ function set(event) {
 
     const angle1 = meshesA[netIdx].quaternion.angleTo(meshesB[netIdx].quaternion)
     const angle2 = meshesC[netIdx].quaternion.angleTo(meshesB[netIdx].quaternion)
-    const motorSpeeds = pop.population[netIdx].getOutput([event.data.aCollided[i], event.data.cCollided[i], event.data.bVelocityX[i], event.data.bVelocityY[i], angle1, angle2])
-    // const motorSpeed1 = Math.max(-2, Math.min(motorSpeeds.get(0,0), 2));
-    // const motorSpeed2 = Math.max(-2, Math.min(motorSpeeds.get(0,1), 2));
+    const motorSpeeds = pop.population[netIdx].getOutput([event.data.aCollided[i], event.data.cCollided[i], event.data.dirToWall.x, event.data.dirToWall.y, event.data.dirToWall.z, event.data.bVelocityX[i], event.data.bVelocityY[i], angle1, angle2])
     motorSpeeds1[i] = -motorSpeeds.get(0,0);
     motorSpeeds2[i] = -motorSpeeds.get(0,1);
   }
 
-  //once all of them have reached 20..
+  //once all of them have reached 300..
   if(event.data.counter > 300){
     workers[event.data.start].finished = true;
     let finished = true;
@@ -100,11 +99,9 @@ function set(event) {
 function generateNewPopulation() {
   for (let netIdx = 0 ; netIdx<POPULATIONCOUNT; netIdx++){
     pop.population[netIdx].fitness = totalRewards[netIdx];
-    console.log(pop.population[netIdx].fitness)
     totalRewards[netIdx] = 0
   }
   pop.createNewGeneration()
-  console.log(pop)
   workers.forEach((worker)=> {
     worker.finished = false;
     worker.worker.postMessage({ a:1, name:'reset'});
@@ -127,7 +124,7 @@ function initThree() {
   // camera.position.y = -305;
   scene.add( camera );
 
-  var light = new THREE.PointLight(0xffffff, 3, 1000);
+  var light = new THREE.PointLight(0xffffff, 5, 1000);
   light.position.set(0,100,100)
   light.castShadow = true;
   light.shadow.camera.far = 1000
@@ -141,7 +138,7 @@ function initThree() {
   const material2 = new THREE.MeshPhongMaterial( { color: 0x5f0707} );
 
   var phongShader = THREE.ShaderLib.phong;
-  //define monkey gridMaterial
+  //define gridMaterial
   var gridMaterial = new THREE.ShaderMaterial ({
     uniforms : phongShader.uniforms,
     vertexShader: vertexShader,
@@ -173,40 +170,39 @@ function initThree() {
       for ( let i = 0; i<POPULATIONCOUNT; i++){
         const mesh = new THREE.Mesh( legGeo, legMat );
         mesh.castShadow = true
-        // mesh.scale.multiplyScalar(0.01)
         group.add( mesh );
         meshesA.push(mesh)
 
         const mesh1 = new THREE.Mesh( bodyGeo, bodyMat );
-        // mesh1.scale.multiplyScalar(0.01)
         mesh1.castShadow = true
 
         group.add( mesh1 );
         meshesB.push(mesh1)
 
         const mesh2 = new THREE.Mesh( legGeo, legMat );
-        // mesh2.scale.multiplyScalar(0.01)
         mesh2.castShadow = true
 
         group.add( mesh2 );
         meshesC.push(mesh2)
       }
       var groundGeometry = new THREE.PlaneGeometry( 2000, 2000, 10,10 );
-      var groundMaterial = new THREE.MeshPhongMaterial( { color: 0x0000ff} );
       var groundMesh = new THREE.Mesh( groundGeometry, gridMaterial );
       groundMesh.receiveShadow = true;
 
       groundMesh.position.set(0,0,-5);
       group.add( groundMesh );
 
-      var size = 2000;
-      var divisions = 100;
-      var gridHelper = new THREE.GridHelper( size, divisions, 0xff27eb, 0x0000eb );
-      gridHelper.position.set(0,0,-5);
-      gridHelper.quaternion.setFromAxisAngle(new THREE.Vector3(1,0,0), Math.PI/2)
-      // group.add( gridHelper );
-      //
-      //
+      //add wall
+      var wallGeometry = new THREE.BoxGeometry( 6,2000,10 );
+      var wallMaterial = new THREE.MeshBasicMaterial( { color: 0x00fff0, wireframe: true} );
+
+      for (let i = 0 ; i < 2; i++){
+        const wallMesh = new THREE.Mesh( wallGeometry, wallMaterial );
+        wallMesh.position.set(72 + i*70,0,0);
+        wallMesh.receiveShadow = true;
+        group.add( wallMesh );
+      }
+
       const destination = new THREE.Mesh( bodyGeo, bodyMat );
       destination.position.set(destinationPoint.x, destinationPoint.y, destinationPoint.z);
       group.add( destination );

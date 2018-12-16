@@ -48,12 +48,11 @@ export default class Population {
           let nextGen = []
           this.population.sort(function(a, b){return b.fitness - a.fitness});
           for (let i = 0; i < this.popCount; i++){
-            if (Math.random() < (this.popCount-(i))/this.popCount){
+            if (Math.random() < Math.min(-0.5*Math.log(i/this.popCount),1)){
               const cloned = Object.assign({}, this.population[i]);
               nextGen.push(cloned);
             }
           }
-          console.log(nextGen.length)
           let fitnessSum = [0]
           let minFit = Math.min(...nextGen.map(function(o) { return o.fitness; }))
           let maxFit = Math.max(...nextGen.map(function(o) { return o.fitness; }))
@@ -68,7 +67,6 @@ export default class Population {
             const i2 = this.bisect_left(fitnessSum, r2)
             nextGen.push( this.createChild(nextGen[i1], nextGen[i2]))
           }
-
           this.population = nextGen
         }
 
