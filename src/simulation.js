@@ -23,7 +23,23 @@ const POPULATIONCOUNT =100;
 
 var net;
 
+var generationText, fitnessText, avgFitnessText, timeText;
+var generationCount = 0;
+var startTime = Date.now();
+
 export default function initWebScene() {
+
+  generationText = document.getElementById("generation");
+  fitnessText = document.getElementById("fitness");
+  avgFitnessText = document.getElementById("avgFitness");
+  timeText = document.getElementById("time");
+
+  generationText.innerHTML = "generation: 0"
+  fitnessText.innerHTML = "max fitness: -"
+  avgFitnessText.innerHTML = "avg fitness: -"
+  timeText.innerHTML = "time: -"
+
+
   initThree();
 
   for (let i = 0; i < 5; i ++){
@@ -97,10 +113,25 @@ function set(event) {
 }
 
 function generateNewPopulation() {
+
+  var maxFitness = 0;
+  var avgFitness = 0;
+
   for (let netIdx = 0 ; netIdx<POPULATIONCOUNT; netIdx++){
     pop.population[netIdx].fitness = totalRewards[netIdx];
+    avgFitness += totalRewards[netIdx];
+    if(totalRewards[netIdx] > maxFitness){
+      maxFitness = totalRewards[netIdx];
+    }
     totalRewards[netIdx] = 0
   }
+  generationCount ++;
+  generationText.innerHTML = 'generation: ' + generationCount;
+  fitnessText.innerHTML = 'max fitness: ' + maxFitness.toFixed(2);
+  avgFitnessText.innerHTML = 'avg fitness: ' + (avgFitness/POPULATIONCOUNT).toFixed(2);
+  timeText.innerHTML = 'time: 0';
+  startTime = Date.now()
+
   pop.createNewGeneration()
   workers.forEach((worker)=> {
     worker.finished = false;
@@ -110,6 +141,9 @@ function generateNewPopulation() {
 }
 
 function update() {
+  var curTime = Date.now() - startTime;
+  timeText.innerHTML = 'time: '+ (curTime/1000).toFixed(2);
+
   requestAnimationFrame(update);
     renderer.render(scene, camera);
 }

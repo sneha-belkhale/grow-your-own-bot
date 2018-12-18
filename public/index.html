@@ -20,12 +20,57 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>React App</title>
+    <style>
+    #description {
+      position: absolute;
+      width: 355px;
+      height: 117px;
+      bottom: 30px;
+      left: 30px;
+      padding: 18px;
+      background-color: transparent;
+      font-family: monospace;
+      color: #ff38f6;
+      border-style: solid;
+      border-width: 1px;
+      font-size: 15px;
+    }
+    #statsBox {
+        background-color: transparent;
+        padding: 10px;
+        width: 200px;
+        position: fixed;
+        right: 50px;
+        line-height: 0.75px;
+    }
+    p {
+      background-color: transparent;
+      font-family: monospace;
+      text-align: right;
+      color: #ff38f6;
+      font-size: 15px;
+    }
+    a {
+      color: #00c1b6;
+    }
+    </style>
   </head>
   <body>
     <noscript>
       You need to enable JavaScript to run this app.
     </noscript>
     <div id="root"></div>
+    <div id = "statsBox" >
+      <p id="generation"></p>
+      <p id="avgFitness"></p>
+      <p id="fitness"></p>
+      <p id="time"></p>
+    </div>
+    <div id="description">
+      You are watching UNITS&lt2LB&gt:437:537 during their terrestrial navigation training routines.
+      Training takes place in a simulated <a href="https://threejs.org" target="_blank">three.js</a> environment powered by <a href="https://cannonjs.org" target="_blank">cannon.js</a> physics engine,
+      following <a href="https://openai.com" target="_blank">openai</a> reinforcement learning code 9138.
+    </div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
